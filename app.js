@@ -1,6 +1,6 @@
 // app.js
 const express = require('express');
-const getConnection = require('./db');
+const getConnection = require('./DB/db');
 
 const app = express();  // Express 앱 인스턴스 생성
 
@@ -42,5 +42,7 @@ app.post('/books', async (req, res) => {
     await conn.close();
   }
 });
+
+
 
 module.exports = app;
