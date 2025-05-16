@@ -1,67 +1,29 @@
 #!/usr/bin/env node
 
-/**
- * Module dependencies.
- */
+const app = require('./app');
+const debug = require('debug')('book-cycle-backend:server');
+const http = require('http');
+require('dotenv').config();
 
-var app = require('./app');
-var debug = require('debug')('book-cycle-backend:server');
-var http = require('http');
+const port = normalizePort(process.env.PORT || '3000');
+app.set('port', port);
 
-/**
- * Get port from environment and store in Express.
- */
-
-var port = normalizePort(process.env.PORT || '3000');
-app.set('port', port);  // app.set() 함수는 `express` 앱에서 사용
-
-/**
- * Create HTTP server.
- */
-
-var server = http.createServer(app);
-
-/**
- * Listen on provided port, on all network interfaces.
- */
+const server = http.createServer(app);
 
 server.listen(port, () => console.log(`서버 실행 중: http://localhost:${port}`));
-
 server.on('error', onError);
 server.on('listening', onListening);
 
-/**
- * Normalize a port into a number, string, or false.
- */
-
 function normalizePort(val) {
-  var port = parseInt(val, 10);
-
-  if (isNaN(port)) {
-    // named pipe
-    return val;
-  }
-
-  if (port >= 0) {
-    // port number
-    return port;
-  }
-
+  const portNum = parseInt(val, 10);
+  if (isNaN(portNum)) return val;
+  if (portNum >= 0) return portNum;
   return false;
 }
 
-/**
- * Event listener for HTTP server "error" event.
- */
-
 function onError(error) {
-  if (error.syscall !== 'listen') {
-    throw error;
-  }
-  var bind = typeof port === 'string'
-    ? 'Pipe ' + port
-    : 'Port ' + port;
-
+  if (error.syscall !== 'listen') throw error;
+  const bind = typeof port === 'string' ? 'Pipe ' + port : 'Port ' + port;
   switch (error.code) {
     case 'EACCES':
       console.error(bind + ' requires elevated privileges');
@@ -76,42 +38,8 @@ function onError(error) {
   }
 }
 
-/**
- * Event listener for HTTP server "listening" event.
- */
-
 function onListening() {
-  var addr = server.address();
-  var bind = typeof addr === 'string'
-    ? 'pipe ' + addr
-    : 'port ' + addr.port;
+  const addr = server.address();
+  const bind = typeof addr === 'string' ? 'pipe ' + addr : 'port ' + addr.port;
   debug('Listening on ' + bind);
 }
-
-
-const connection = require('./DB/db'); 
-require('dotenv').config();
-
-// MySQL과 DynamoDB 연결 확인
-const checkConnections = async () => {
-  try {
-    // MySQL 연결 확인 (Promise로 변환)
-    await new Promise((resolve, reject) => {
-      connection.getConnection((err, conn) => {
-        if (err) {
-          console.error("MySQL 연결 실패: ", err);
-          reject(err);
-          return;
-        }
-        conn.release();
-        console.log("MySQL 연결 성공");
-        resolve();
-      });
-    });
-  }
-  catch (err) {
-    console.error("MySQL 연결 확인 중 오류 발생: ", err);
-  }
-}
-
-checkConnections();
