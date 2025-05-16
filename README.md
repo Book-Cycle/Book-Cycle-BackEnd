@@ -6,7 +6,7 @@
 중고서적 거래 웹 서비스의 백엔드 API 서버입니다.  
 Node.js, Express, MySQL을 기반으로 사용자 관리 및 데이터베이스 연동 기능을 제공합니다.
 
----
+##
 
 ## 주요 기능
 
@@ -15,7 +15,7 @@ Node.js, Express, MySQL을 기반으로 사용자 관리 및 데이터베이스 
 - 특정 사용자 삭제 (DELETE `/users/:user_id`)
 - MySQL 연결 풀(Pool) 관리 및 효율적 쿼리 처리
 
----
+##
 
 ## 기술 스택
 
@@ -24,7 +24,7 @@ Node.js, Express, MySQL을 기반으로 사용자 관리 및 데이터베이스 
 - MySQL (mysql2)
 - dotenv (환경 변수 관리)
 
----
+##
 
 ## 설치 및 실행
 
