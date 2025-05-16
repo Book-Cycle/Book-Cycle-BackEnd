@@ -1,8 +1,8 @@
 const express = require('express');
 const router = express.Router();
-const pool = require('../DB/db');  // MySQL 연결 풀 모듈 불러오기
+const pool = require('../DB/db');
 
-// 에러 핸들링 함수: 에러 로그 출력 후 클라이언트에 에러 메시지 응답
+//에러 로그 출력 후 클라이언트에 에러 메시지 응답
 const handleError = (res, error, message = '서버 오류가 발생했습니다.', status = 500) => {
     console.error(message, error);
     res.status(status).json({message});
