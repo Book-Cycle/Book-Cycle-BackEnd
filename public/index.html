@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html>
+<body>
+<input id="msg"/>
+<button id="sendBtn" onclick="send()">Send</button>
+<div id="chat"></div>
+
+<script>
+    let socket;
+    const chat = document.getElementById("chat");
+    const sendBtn = document.getElementById("sendBtn");
+
+    function connect() {
+        socket = new WebSocket('ws://localhost:3000');
+
+        socket.onopen = () => {
+            console.log("서버 연결됨");
+            sendBtn.disabled = false;
+        };
+
+        socket.onmessage = (e) => {
+            chat.innerHTML += `<p>${e.data}</p>`;
+        };
+
+        socket.onclose = () => {
+            console.log("서버 연결 종료");
+            sendBtn.disabled = true;
+            setTimeout(() => {
+                console.log("재접속 시도중...");
+                connect();
+            }, 3000);
+        };
+
+        socket.onerror = (error) => {
+            console.error("웹소켓 에러:", error);
+        };
+    }
+
+    function send() {
+        const val = document.getElementById("msg").value;
+        if (socket.readyState === WebSocket.OPEN) {
+            socket.send(val);
+            document.getElementById("msg").value = "";
+        } else {
+            alert("서버와 연결이 닫혔습니다. 잠시 후 다시 시도하세요.");
+        }
+    }
+
+    connect();
+</script>
+</body>
+</html>
