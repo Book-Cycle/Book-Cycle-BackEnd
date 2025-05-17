@@ -1,52 +1,104 @@
 <!DOCTYPE html>
-<html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>CRUD</title>
+</head>
 <body>
-<input id="msg"/>
-<button id="sendBtn" onclick="send()">Send</button>
-<div id="chat"></div>
+<h2>👤 사용자 등록</h2>
+<input id="name" placeholder="이름">
+<input id="id" placeholder="아이디">
+<input id="password" placeholder="비밀번호">
+<button onclick="createUser()">등록</button>
+
+<h2>📋 사용자 목록</h2>
+<button onclick="loadUsers()">새로고침</button>
+<table border="1" cellpadding="5">
+    <thead>
+    <tr>
+        <th>user_id</th>
+        <th>name</th>
+        <th>id</th>
+        <th>password</th>
+        <th>수정</th>
+        <th>삭제</th>
+    </tr>
+    </thead>
+    <tbody id="userTableBody"></tbody>
+</table>
 
 <script>
-    let socket;
-    const chat = document.getElementById("chat");
-    const sendBtn = document.getElementById("sendBtn");
+    const API_URL = 'http://localhost:3000/api/users';
 
-    function connect() {
-        socket = new WebSocket('ws://localhost:3000');
+    // 사용자 목록 조회
+    async function loadUsers() {
+        const res = await fetch(API_URL);
+        const users = await res.json();
+        console.log(users);
+        const tbody = document.getElementById('userTableBody');
+        tbody.innerHTML = '';
 
-        socket.onopen = () => {
-            console.log("서버 연결됨");
-            sendBtn.disabled = false;
-        };
-
-        socket.onmessage = (e) => {
-            chat.innerHTML += `<p>${e.data}</p>`;
-        };
-
-        socket.onclose = () => {
-            console.log("서버 연결 종료");
-            sendBtn.disabled = true;
-            setTimeout(() => {
-                console.log("재접속 시도중...");
-                connect();
-            }, 3000);
-        };
-
-        socket.onerror = (error) => {
-            console.error("웹소켓 에러:", error);
-        };
+        users.forEach(user => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td>${user.USER_ID}</td>
+                <td><input value="${user.NAME}" id="name-${user.USER_ID}"></td>
+                <td><input value="${user.ID}" id="id-${user.USER_ID}"></td>
+                <td><input value="${user.PASSWORD}" id="password-${user.USER_ID}"></td>
+                <td><button onclick="updateUser(${user.USER_ID})">수정</button></td>
+                <td><button onclick="deleteUser(${user.USER_ID})">삭제</button></td>
+            `;
+            tbody.appendChild(tr);
+        });
     }
 
-    function send() {
-        const val = document.getElementById("msg").value;
-        if (socket.readyState === WebSocket.OPEN) {
-            socket.send(val);
-            document.getElementById("msg").value = "";
-        } else {
-            alert("서버와 연결이 닫혔습니다. 잠시 후 다시 시도하세요.");
-        }
+    // 사용자 등록
+    async function createUser() {
+        const name = document.getElementById('name').value;
+        const id = document.getElementById('id').value;
+        const password = document.getElementById('password').value;
+
+        const res = await fetch(API_URL, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({name, id, password})
+        });
+        const result = await res.json();
+        console.log("등록 응답:", result);
+        alert(result.message);
+        loadUsers();
     }
 
-    connect();
+    // 사용자 수정
+    async function updateUser(user_id) {
+        const name = document.getElementById(`name-${user_id}`).value;
+        const id = document.getElementById(`id-${user_id}`).value;
+        const password = document.getElementById(`password-${user_id}`).value;
+
+        const res = await fetch(`${API_URL}/${user_id}`, {
+            method: 'PUT',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({name, id, password})
+        });
+        const result = await res.json();
+        console.log("수정 응답:", result);
+        alert(result.message);
+        loadUsers(); // 목록 새로고침
+    }
+
+    // 사용자 삭제
+    async function deleteUser(user_id) {
+        if (!confirm(`${user_id}번 사용자를 삭제할까요?`)) return;
+        console.log('삭제할 user_id:', user_id);
+
+        const res = await fetch(`${API_URL}/${user_id}`, {method: 'DELETE'});
+        const result = await res.json();
+        console.log("삭제 응답:", result);
+        alert(result.message);
+        loadUsers(); // 목록 새로고침
+    }
+
+    loadUsers();
 </script>
 </body>
 </html>

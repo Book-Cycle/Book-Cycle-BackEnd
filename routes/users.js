@@ -49,6 +49,7 @@ router.post('/', async (req, res) => {
 // 특정 사용자 삭제 API
 router.delete('/:user_id', async (req, res) => {
     const {user_id} = req.params;
+    console.log('user_id:', user_id);
 
     try {
         const [result] = await pool.promise().query('DELETE FROM users WHERE user_id = ?', [user_id]);
