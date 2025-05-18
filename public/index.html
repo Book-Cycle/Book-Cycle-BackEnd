@@ -2,15 +2,25 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <title>CRUD</title>
+    <title>Book-Cycle 사용자 관리</title>
 </head>
 <body>
-<h2>👤 사용자 등록</h2>
-<input id="name" placeholder="이름">
-<input id="id" placeholder="아이디">
-<input id="password" placeholder="비밀번호">
-<button onclick="createUser()">등록</button>
+<h1>📚 Book-Cycle 사용자 관리</h1>
 
+<!-- ✅ 회원가입 -->
+<h2>👤 회원가입</h2>
+<input id="signup-name" placeholder="이름">
+<input id="signup-id" placeholder="아이디">
+<input id="signup-password" placeholder="비밀번호" type="password">
+<button onclick="createUser()">회원가입</button>
+
+<!-- ✅ 로그인 -->
+<h2>🔐 로그인</h2>
+<input id="login-id" placeholder="아이디">
+<input id="login-password" placeholder="비밀번호" type="password">
+<button onclick="loginUser()">로그인</button>
+
+<!-- ✅ 사용자 목록 -->
 <h2>📋 사용자 목록</h2>
 <button onclick="loadUsers()">새로고침</button>
 <table border="1" cellpadding="5">
@@ -19,7 +29,7 @@
         <th>user_id</th>
         <th>name</th>
         <th>id</th>
-        <th>password</th>
+        <th>비밀번호 변경</th>
         <th>수정</th>
         <th>삭제</th>
     </tr>
@@ -29,12 +39,15 @@
 
 <script>
     const API_URL = 'http://localhost:3000/api/users';
+    const LOGIN_URL = 'http://localhost:3000/api/login';
 
-    // 사용자 목록 조회
+    // ✅ 사용자 목록 조회
     async function loadUsers() {
+
+        // console.log("전체 사용자 목록:", user);
+
         const res = await fetch(API_URL);
         const users = await res.json();
-        console.log(users);
         const tbody = document.getElementById('userTableBody');
         tbody.innerHTML = '';
 
@@ -44,7 +57,7 @@
                 <td>${user.USER_ID}</td>
                 <td><input value="${user.NAME}" id="name-${user.USER_ID}"></td>
                 <td><input value="${user.ID}" id="id-${user.USER_ID}"></td>
-                <td><input value="${user.PASSWORD}" id="password-${user.USER_ID}"></td>
+                <td><input placeholder="새 비밀번호" id="password-${user.USER_ID}" type="password"></td>
                 <td><button onclick="updateUser(${user.USER_ID})">수정</button></td>
                 <td><button onclick="deleteUser(${user.USER_ID})">삭제</button></td>
             `;
@@ -52,52 +65,78 @@
         });
     }
 
-    // 사용자 등록
+    // ✅ 회원가입
     async function createUser() {
-        const name = document.getElementById('name').value;
-        const id = document.getElementById('id').value;
-        const password = document.getElementById('password').value;
+        const name = document.getElementById('signup-name').value;
+        const id = document.getElementById('signup-id').value;
+        const password = document.getElementById('signup-password').value;
 
         const res = await fetch(API_URL, {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
             body: JSON.stringify({name, id, password})
         });
+
         const result = await res.json();
-        console.log("등록 응답:", result);
-        alert(result.message);
+        alert(result.message || '회원가입 완료');
         loadUsers();
     }
 
-    // 사용자 수정
+    // ✅ 로그인
+    async function loginUser() {
+        const id = document.getElementById('login-id').value;
+        const password = document.getElementById('login-password').value;
+
+        const res = await fetch('http://localhost:3000/api/login', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({id, password})
+        });
+
+        if (!res.ok) {
+            // 에러 메시지 받기
+            const errorData = await res.json();
+            alert(errorData.message || '로그인 실패');
+            return;
+        }
+
+        const data = await res.json();
+        alert(data.message);
+        // 토큰 처리 등 로그인 성공 후 작업
+    }
+
+
+    // ✅ 사용자 수정
     async function updateUser(user_id) {
         const name = document.getElementById(`name-${user_id}`).value;
         const id = document.getElementById(`id-${user_id}`).value;
         const password = document.getElementById(`password-${user_id}`).value;
 
+        const body = {name, id};
+        if (password.trim()) body.password = password;
+
         const res = await fetch(`${API_URL}/${user_id}`, {
             method: 'PUT',
             headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({name, id, password})
+            body: JSON.stringify(body)
         });
+
         const result = await res.json();
-        console.log("수정 응답:", result);
         alert(result.message);
-        loadUsers(); // 목록 새로고침
+        loadUsers();
     }
 
-    // 사용자 삭제
+    // ✅ 사용자 삭제
     async function deleteUser(user_id) {
         if (!confirm(`${user_id}번 사용자를 삭제할까요?`)) return;
-        console.log('삭제할 user_id:', user_id);
 
         const res = await fetch(`${API_URL}/${user_id}`, {method: 'DELETE'});
         const result = await res.json();
-        console.log("삭제 응답:", result);
         alert(result.message);
-        loadUsers(); // 목록 새로고침
+        loadUsers();
     }
 
+    // 초기 로드
     loadUsers();
 </script>
 </body>
