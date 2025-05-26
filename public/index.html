@@ -39,6 +39,7 @@
 
 <script>
     const API_URL = 'http://localhost:3000/api/users';
+    const REGISTER_URL = 'http://localhost:3000/api/register';
     const LOGIN_URL = 'http://localhost:3000/api/login';
 
     // ✅ 사용자 목록 조회
@@ -71,7 +72,7 @@
         const id = document.getElementById('signup-id').value;
         const password = document.getElementById('signup-password').value;
 
-        const res = await fetch(API_URL, {
+        const res = await fetch(REGISTER_URL, {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
             body: JSON.stringify({name, id, password})
