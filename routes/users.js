@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const pool = require('../DB/db');
+const bcrypt = require("bcrypt");
 
 //에러 로그 출력 후 클라이언트에 에러 메시지 응답
 const handleError = (res, error, message = '서버 오류가 발생했습니다.', status = 500) => {
@@ -85,8 +86,9 @@ router.put('/:user_id', async (req, res) => {
         values.push(id);
     }
     if (password) {
+        const hashedPassword = await bcrypt.hash(password, 10);
         fields.push('password = ?');
-        values.push(password);
+        values.push(hashedPassword);
     }
 
     values.push(user_id);
