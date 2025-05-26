@@ -16,8 +16,8 @@ router.post('/', async (req, res) => {
         }
 
         const user = rows[0];
-        console.log('DB 비밀번호 해시:', user.password);  // 필드명 맞는지 꼭 확인
-        console.log('입력한 비밀번호:', password);
+        // console.log('DB 비밀번호 해시:', user.password);  // 필드명 맞는지 꼭 확인
+        // console.log('입력한 비밀번호:', password);
 
         const match = await bcrypt.compare(password, user.password);
         if (!match) return res.status(401).json({ message: '비밀번호 틀림' });
