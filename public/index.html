@@ -1,144 +1,198 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-    <meta charset="UTF-8">
-    <title>Book-Cycle 사용자 관리</title>
+    <meta charset="UTF-8" />
+    <title>Book-Cycle 사용자 관리 & 이미지 업로드</title>
+    <style>
+        #uploadedImages {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        .image-wrapper {
+            position: relative;
+            display: inline-block;
+        }
+        #uploadedImages img {
+            width: 150px;
+            height: 150px;
+            object-fit: cover;
+            border: 1px solid #ccc;
+            display: block;
+        }
+        .delete-btn {
+            position: absolute;
+            top: 3px;
+            right: 3px;
+            background: rgba(255,0,0,0.7);
+            border: none;
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+            border-radius: 3px;
+            padding: 2px 6px;
+            font-size: 14px;
+        }
+        #resetBtn {
+            margin-top: 10px;
+            padding: 6px 12px;
+            background: #f44336;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        #resetBtn:hover {
+            background: #d32f2f;
+        }
+    </style>
 </head>
 <body>
 <h1>📚 Book-Cycle 사용자 관리</h1>
 
-<!-- ✅ 회원가입 -->
-<h2>👤 회원가입</h2>
-<input id="signup-name" placeholder="이름">
-<input id="signup-id" placeholder="아이디">
-<input id="signup-password" placeholder="비밀번호" type="password">
-<button onclick="createUser()">회원가입</button>
+<!-- 이미지 업로드 -->
+<h2>📤 이미지 업로드</h2>
 
-<!-- ✅ 로그인 -->
-<h2>🔐 로그인</h2>
-<input id="login-id" placeholder="아이디">
-<input id="login-password" placeholder="비밀번호" type="password">
-<button onclick="loginUser()">로그인</button>
+<label>이미지 선택 (최대 5개):
+    <input type="file" id="fileInput" accept="image/*" multiple />
+</label>
+<button onclick="uploadImages()">업로드</button>
+<button id="resetBtn" onclick="resetImages()">리셋</button>
 
-<!-- ✅ 사용자 목록 -->
-<h2>📋 사용자 목록</h2>
-<button onclick="loadUsers()">새로고침</button>
-<table border="1" cellpadding="5">
-    <thead>
-    <tr>
-        <th>user_id</th>
-        <th>name</th>
-        <th>id</th>
-        <th>비밀번호 변경</th>
-        <th>수정</th>
-        <th>삭제</th>
-    </tr>
-    </thead>
-    <tbody id="userTableBody"></tbody>
-</table>
+<h2>📸 업로드된 이미지</h2>
+<div id="uploadedImages"></div>
 
 <script>
-    const API_URL = 'http://localhost:3000/api/users';
-    const REGISTER_URL = 'http://localhost:3000/api/register';
-    const LOGIN_URL = 'http://localhost:3000/api/login';
+    const API_UPLOAD = 'http://localhost:3000/api/upload';
+    const API_DELETE = 'http://localhost:3000/api/upload';
+    const MAX_FILES = 5;
 
-    // ✅ 사용자 목록 조회
-    async function loadUsers() {
+    const STORAGE_KEY = 'uploadedImageUrls';
 
-        // console.log("전체 사용자 목록:", user);
-
-        const res = await fetch(API_URL);
-        const users = await res.json();
-        const tbody = document.getElementById('userTableBody');
-        tbody.innerHTML = '';
-
-        users.forEach(user => {
-            const tr = document.createElement('tr');
-            tr.innerHTML = `
-                <td>${user.USER_ID}</td>
-                <td><input value="${user.NAME}" id="name-${user.USER_ID}"></td>
-                <td><input value="${user.ID}" id="id-${user.USER_ID}"></td>
-                <td><input placeholder="새 비밀번호" id="password-${user.USER_ID}" type="password"></td>
-                <td><button onclick="updateUser(${user.USER_ID})">수정</button></td>
-                <td><button onclick="deleteUser(${user.USER_ID})">삭제</button></td>
-            `;
-            tbody.appendChild(tr);
-        });
+    function loadStoredImages() {
+        const stored = localStorage.getItem(STORAGE_KEY);
+        return stored ? JSON.parse(stored) : [];
     }
 
-    // ✅ 회원가입
-    async function createUser() {
-        const name = document.getElementById('signup-name').value;
-        const id = document.getElementById('signup-id').value;
-        const password = document.getElementById('signup-password').value;
-
-        const res = await fetch(REGISTER_URL, {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({name, id, password})
-        });
-
-        const result = await res.json();
-        alert(result.message || '회원가입 완료');
-        loadUsers();
+    function saveStoredImages(urls) {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(urls));
     }
 
-    // ✅ 로그인
-    async function loginUser() {
-        const id = document.getElementById('login-id').value;
-        const password = document.getElementById('login-password').value;
+    function addImageToDOM(url) {
+        const container = document.getElementById('uploadedImages');
+        const wrapper = document.createElement('div');
+        wrapper.className = 'image-wrapper';
 
-        const res = await fetch('http://localhost:3000/api/login', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({id, password})
-        });
+        const img = document.createElement('img');
+        img.src = url;
+        wrapper.appendChild(img);
 
-        if (!res.ok) {
-            // 에러 메시지 받기
-            const errorData = await res.json();
-            alert(errorData.message || '로그인 실패');
+        const btn = document.createElement('button');
+        btn.textContent = 'X';
+        btn.className = 'delete-btn';
+        btn.onclick = () => deleteImage(url, wrapper);
+        wrapper.appendChild(btn);
+
+        container.appendChild(wrapper);
+    }
+
+    function showStoredImages() {
+        const urls = loadStoredImages();
+        const container = document.getElementById('uploadedImages');
+        container.innerHTML = '';
+        urls.forEach(url => addImageToDOM(url));
+    }
+
+    function showUploadedImages(urls) {
+        const storedUrls = loadStoredImages();
+        const newUrls = [...storedUrls, ...urls];
+        saveStoredImages(newUrls);
+        urls.forEach(url => addImageToDOM(url));
+    }
+
+    async function deleteImage(url, wrapperElem) {
+        if (!confirm('이 이미지를 삭제하시겠습니까?')) return;
+
+        try {
+            const res = await fetch(API_DELETE, {
+                method: 'DELETE',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ imageUrl: url })
+            });
+
+            if (!res.ok) {
+                const errorData = await res.json();
+                alert(errorData.error || '삭제 실패');
+                return;
+            }
+
+            wrapperElem.remove();
+
+            let urls = loadStoredImages();
+            urls = urls.filter(u => u !== url);
+            saveStoredImages(urls);
+
+            alert('이미지가 삭제되었습니다.');
+        } catch (e) {
+            alert('삭제 중 오류가 발생했습니다.');
+            console.error(e);
+        }
+    }
+
+    async function uploadImages() {
+        const input = document.getElementById('fileInput');
+
+        if (!input.files.length) {
+            alert('파일을 선택해주세요.');
             return;
         }
 
-        const data = await res.json();
-        alert(data.message);
-        // 토큰 처리 등 로그인 성공 후 작업
+        if (input.files.length > MAX_FILES) {
+            alert(`최대 ${MAX_FILES}개까지만 업로드할 수 있습니다.`);
+            return;
+        }
+
+        const formData = new FormData();
+        for (const file of input.files) {
+            formData.append('images', file);
+        }
+
+        try {
+            const res = await fetch(API_UPLOAD, {
+                method: 'POST',
+                body: formData
+            });
+
+            if (!res.ok) {
+                const errorData = await res.json();
+                alert(errorData.error || '업로드 실패');
+                return;
+            }
+
+            const data = await res.json();
+            alert(data.message);
+
+            showUploadedImages(data.imageUrls);
+            input.value = '';  // 초기화
+        } catch (e) {
+            alert('업로드 중 오류가 발생했습니다.');
+            console.error(e);
+        }
     }
 
+    // 이미지 리셋 함수 - 로컬 저장소 및 화면 초기화
+    function resetImages() {
+        if (!confirm('업로드된 모든 이미지를 삭제하고 리셋하시겠습니까?')) return;
 
-    // ✅ 사용자 수정
-    async function updateUser(user_id) {
-        const name = document.getElementById(`name-${user_id}`).value;
-        const id = document.getElementById(`id-${user_id}`).value;
-        const password = document.getElementById(`password-${user_id}`).value;
-
-        const body = {name, id};
-        if (password.trim()) body.password = password;
-
-        const res = await fetch(`${API_URL}/${user_id}`, {
-            method: 'PUT',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify(body)
-        });
-
-        const result = await res.json();
-        alert(result.message);
-        loadUsers();
+        localStorage.removeItem(STORAGE_KEY);
+        const container = document.getElementById('uploadedImages');
+        container.innerHTML = '';
+        alert('모든 이미지가 리셋되었습니다.');
     }
 
-    // ✅ 사용자 삭제
-    async function deleteUser(user_id) {
-        if (!confirm(`${user_id}번 사용자를 삭제할까요?`)) return;
-
-        const res = await fetch(`${API_URL}/${user_id}`, {method: 'DELETE'});
-        const result = await res.json();
-        alert(result.message);
-        loadUsers();
-    }
-
-    // 초기 로드
-    loadUsers();
+    window.onload = () => {
+        showStoredImages();
+    };
 </script>
 </body>
 </html>
