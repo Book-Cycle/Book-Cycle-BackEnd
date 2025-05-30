@@ -110,6 +110,20 @@ app.delete('/api/upload', (req, res) => {
     });
 });
 
+// 업로드된 이미지 목록을 반환하는 API
+app.get('/api/uploads', (req, res) => {
+    fs.readdir(uploadDir, (err, files) => {
+        if (err) {
+            console.error('파일 목록 읽기 오류:', err);
+            return res.status(500).json({ error: '파일 목록을 불러올 수 없습니다.' });
+        }
+
+        // /uploads/경로로 접근 가능한 URL로 변환
+        const imageUrls = files.map(file => `/uploads/${file}`);
+        res.json({ imageUrls });
+    });
+});
+
 // 라우터 연결
 app.use('/api/users', usersRouter);
 app.use('/api/product_posts', productRouter);

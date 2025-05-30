@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8" />
-    <title>Book-Cycle 이미지 업로드 임시 UI</title>
+    <title>Book-Cycle 이미지 업로드 UI</title>
     <style>
         #uploadedImages {
             display: flex;
@@ -13,7 +13,7 @@
             position: relative;
             display: inline-block;
         }
-        #uploadedImages img {
+        .image-wrapper img {
             width: 150px;
             height: 150px;
             object-fit: cover;
@@ -24,7 +24,7 @@
             position: absolute;
             top: 3px;
             right: 3px;
-            background: rgba(255,0,0,0.7);
+            background: rgba(255, 0, 0, 0.7);
             border: none;
             color: white;
             font-weight: bold;
@@ -32,6 +32,17 @@
             border-radius: 3px;
             padding: 2px 6px;
             font-size: 14px;
+        }
+        .download-btn {
+            position: absolute;
+            bottom: 3px;
+            right: 3px;
+            background: rgba(0, 0, 0, 0.6);
+            color: white;
+            font-size: 14px;
+            padding: 2px 6px;
+            text-decoration: none;
+            border-radius: 3px;
         }
         #resetBtn {
             margin-top: 10px;
@@ -48,11 +59,9 @@
     </style>
 </head>
 <body>
-<h1>Book-Cycle</h1>
+<h1>📚 Book-Cycle 이미지 업로드</h1>
 
-<!-- 이미지 업로드 -->
 <h2>이미지 업로드</h2>
-
 <label>이미지 선택 (최대 5개):
     <input type="file" id="fileInput" accept="image/*" multiple />
 </label>
@@ -66,7 +75,6 @@
     const API_UPLOAD = 'https://book-cycle-backend.onrender.com/api/upload';
     const API_DELETE = 'https://book-cycle-backend.onrender.com/api/upload';
     const MAX_FILES = 5;
-
     const STORAGE_KEY = 'uploadedImageUrls';
 
     function loadStoredImages() {
@@ -87,11 +95,18 @@
         img.src = url;
         wrapper.appendChild(img);
 
-        const btn = document.createElement('button');
-        btn.textContent = 'X';
-        btn.className = 'delete-btn';
-        btn.onclick = () => deleteImage(url, wrapper);
-        wrapper.appendChild(btn);
+        const downloadBtn = document.createElement('a');
+        downloadBtn.href = url;
+        downloadBtn.download = '';
+        downloadBtn.className = 'download-btn';
+        downloadBtn.textContent = '⬇️';
+        wrapper.appendChild(downloadBtn);
+
+        const deleteBtn = document.createElement('button');
+        deleteBtn.textContent = 'X';
+        deleteBtn.className = 'delete-btn';
+        deleteBtn.onclick = () => deleteImage(url, wrapper);
+        wrapper.appendChild(deleteBtn);
 
         container.appendChild(wrapper);
     }
@@ -127,11 +142,9 @@
             }
 
             wrapperElem.remove();
-
             let urls = loadStoredImages();
             urls = urls.filter(u => u !== url);
             saveStoredImages(urls);
-
             alert('이미지가 삭제되었습니다.');
         } catch (e) {
             alert('삭제 중 오류가 발생했습니다.');
@@ -171,16 +184,14 @@
 
             const data = await res.json();
             alert(data.message);
-
             showUploadedImages(data.imageUrls);
-            input.value = '';  // 초기화
+            input.value = ''; // 초기화
         } catch (e) {
             alert('업로드 중 오류가 발생했습니다.');
             console.error(e);
         }
     }
 
-    // 이미지 리셋 함수 - 로컬 저장소 및 화면 초기화
     function resetImages() {
         if (!confirm('업로드된 모든 이미지를 삭제하고 리셋하시겠습니까?')) return;
 
