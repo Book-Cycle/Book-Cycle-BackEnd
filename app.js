@@ -20,6 +20,11 @@ const uploadDir = path.join(__dirname, 'uploads');
 if (!fs.existsSync(uploadDir)) {
     fs.mkdirSync(uploadDir);
 }
+// banner 폴더 경로 및 생성
+const bannerDir = path.join(__dirname, 'uploads', 'banners');
+if (!fs.existsSync(bannerDir)) {
+    fs.mkdirSync(bannerDir, { recursive: true });
+}
 
 // multer 저장소 설정
 const storage = multer.diskStorage({
@@ -54,9 +59,37 @@ app.post('/api/upload', (req, res, next) => {
     });
 });
 
+const bannerStorage = multer.diskStorage({
+    destination: function (req, file, cb) {
+        cb(null, 'uploads/banners/');
+    },
+    filename: function (req, file, cb) {
+        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+        cb(null, uniqueSuffix + path.extname(file.originalname));
+    }
+});
+
+const uploadBanner = multer({ storage: bannerStorage });
+
+
+// 배너 파일 업로드 처리 (key : banner)
+app.post('/api/upload/banner', (req, res, next) => {
+    uploadBanner.single('banner')(req, res, (err) => {
+        if (err) return next(err);
+
+        if (!req.file) {
+            return res.status(400).send('No banner image uploaded.');
+        }
+
+        const imageUrl = `/uploads/banners/${req.file.filename}`;
+        res.json({ message: 'Banner uploaded', imageUrl });
+    });
+});
+
 // 이미지 삭제 API
 app.delete('/api/upload', (req, res) => {
     const { imageUrl } = req.body;
+
 
     if (!imageUrl) {
         return res.status(400).json({ error: 'imageUrl이 필요합니다.' });
