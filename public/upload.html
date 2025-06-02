@@ -43,10 +43,10 @@
     const STORAGE_KEY = 'uploadedImageUrls';
 
     // 페이지 접근 시 로그인 체크
-    if (!localStorage.getItem('token')) {
-        alert('로그인이 필요합니다.');
-        window.location.href = 'index.html';
-    }
+    // if (!localStorage.getItem('token')) {
+    //     alert('로그인이 필요합니다.');
+    //     window.location.href = 'index.html';
+    // }
 
     function saveStoredImages(urls) {
         localStorage.setItem(STORAGE_KEY, JSON.stringify(urls));
@@ -84,9 +84,14 @@
             formData.append('images', file);
         }
 
+        const token = localStorage.getItem('token');
+
         try {
             const res = await fetch(API_UPLOAD, {
                 method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                },
                 body: formData
             });
 
@@ -106,12 +111,24 @@
     async function deleteImage(url, wrapper) {
         if (!confirm('이미지를 삭제하시겠습니까?')) return;
 
+        const token = localStorage.getItem('token');
+
         try {
             const res = await fetch(API_DELETE, {
                 method: 'DELETE',
-                headers: {'Content-Type': 'application/json'},
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
                 body: JSON.stringify({ imageUrl: url })
             });
+
+            if (!res.ok) {
+                // 오류 메시지 받고 alert 띄우기
+                const error = await res.json();
+                alert(error.message || '삭제 실패');
+                return; // 여기서 종료, 삭제 UI 반영 안 함
+            }
 
             const result = await res.json();
             alert(result.message);
@@ -121,8 +138,10 @@
             saveStoredImages(urls);
         } catch (e) {
             console.error('삭제 실패', e);
+            alert('삭제 중 오류가 발생했습니다.');
         }
     }
+
 
     function logout() {
         localStorage.removeItem('token');

@@ -2,6 +2,7 @@ const express = require('express');
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
+const authMiddleware = require('../middleware/authMidleware');
 
 const router = express.Router();
 
@@ -21,9 +22,10 @@ const upload = multer({
 });
 
 // 파일 업로드
-router.post('/', (req, res, next) => {
+router.post('/',authMiddleware, (req, res, next) => {
     upload.array('images', 5)(req, res, (err) => {
         if (err) return next(err);
+
         if (!req.files || req.files.length === 0) {
             return res.status(400).send('No images uploaded.');
         }
@@ -34,7 +36,7 @@ router.post('/', (req, res, next) => {
 });
 
 // 파일 삭제
-router.delete('/', (req, res) => {
+router.delete('/', authMiddleware , (req, res) => {
     const { imageUrl } = req.body;
     if (!imageUrl) return res.status(400).json({ error: 'imageUrl이 필요합니다.' });
 
@@ -44,7 +46,7 @@ router.delete('/', (req, res) => {
     fs.unlink(filePath, (err) => {
         if (err) {
             console.error('파일 삭제 실패:', err);
-            return res.status(500).json({ error: '파일 삭제 실패' });
+            return res.status(500).json({ error: '파일 삭제 실패' })
         }
         res.json({ message: '파일이 성공적으로 삭제되었습니다.' });
     });
