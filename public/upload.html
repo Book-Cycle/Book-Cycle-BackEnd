@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8" />
+    <title>Book-Cycle 이미지 업로드</title>
+    <style>
+        #uploadedImages {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        .image-wrapper {
+            position: relative;
+        }
+        .image-wrapper img {
+            width: 150px;
+            height: 150px;
+            object-fit: cover;
+        }
+        .delete-btn {
+            position: absolute;
+            top: 3px;
+            right: 3px;
+            background: red;
+            color: white;
+            border: none;
+            padding: 2px 6px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+<h1>📸 이미지 업로드</h1>
+<input type="file" id="fileInput" multiple accept="image/*">
+<button onclick="uploadImages()">업로드</button>
+<button onclick="logout()">로그아웃</button>
+
+<div id="uploadedImages"></div>
+
+<script>
+    const API_UPLOAD = 'http://localhost:3000/api/upload';
+    const API_DELETE = 'http://localhost:3000/api/upload';
+    const STORAGE_KEY = 'uploadedImageUrls';
+
+    // 페이지 접근 시 로그인 체크
+    if (!localStorage.getItem('token')) {
+        alert('로그인이 필요합니다.');
+        window.location.href = 'index.html';
+    }
+
+    function saveStoredImages(urls) {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(urls));
+    }
+
+    function loadStoredImages() {
+        const stored = localStorage.getItem(STORAGE_KEY);
+        return stored ? JSON.parse(stored) : [];
+    }
+
+    function addImageToDOM(url) {
+        const container = document.getElementById('uploadedImages');
+        const wrapper = document.createElement('div');
+        wrapper.className = 'image-wrapper';
+
+        const img = document.createElement('img');
+        img.src = url;
+
+        const btn = document.createElement('button');
+        btn.className = 'delete-btn';
+        btn.textContent = 'X';
+        btn.onclick = () => deleteImage(url, wrapper);
+
+        wrapper.appendChild(img);
+        wrapper.appendChild(btn);
+        container.appendChild(wrapper);
+    }
+
+    async function uploadImages() {
+        const input = document.getElementById('fileInput');
+        if (!input.files.length) return alert('파일을 선택해주세요.');
+
+        const formData = new FormData();
+        for (const file of input.files) {
+            formData.append('images', file);
+        }
+
+        try {
+            const res = await fetch(API_UPLOAD, {
+                method: 'POST',
+                body: formData
+            });
+
+            const data = await res.json();
+            alert(data.message);
+            data.imageUrls.forEach(addImageToDOM);
+
+            const stored = loadStoredImages();
+            saveStoredImages([...stored, ...data.imageUrls]);
+            input.value = '';
+        } catch (e) {
+            alert('업로드 실패');
+            console.error(e);
+        }
+    }
+
+    async function deleteImage(url, wrapper) {
+        if (!confirm('이미지를 삭제하시겠습니까?')) return;
+
+        try {
+            const res = await fetch(API_DELETE, {
+                method: 'DELETE',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ imageUrl: url })
+            });
+
+            const result = await res.json();
+            alert(result.message);
+            wrapper.remove();
+
+            const urls = loadStoredImages().filter(u => u !== url);
+            saveStoredImages(urls);
+        } catch (e) {
+            console.error('삭제 실패', e);
+        }
+    }
+
+    function logout() {
+        localStorage.removeItem('token');
+        window.location.href = 'index.html';
+    }
+
+    window.onload = () => {
+        loadStoredImages().forEach(addImageToDOM);
+    };
+</script>
+</body>
+</html>

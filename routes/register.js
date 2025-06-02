@@ -4,25 +4,30 @@ const pool = require('../DB/db');
 const router = express.Router();
 
 router.post('/', async (req, res) => {
-    const users = req.body; // 배열로 받음
+    let users = req.body;
 
+    // 단일 객체인 경우 배열로 변환
     if (!Array.isArray(users)) {
-        return res.status(400).send('배열 형식의 사용자 데이터가 필요합니다.');
+        users = [users];
     }
 
-    try {
-        for (const user of users) {
-            const { name, id, password } = user;
+    const results = [];
 
-            // 필수값 확인
-            if (!name || !id || !password) {
-                return res.status(400).send(`필수 항목 누락: name, id, password가 필요합니다.`);
-            }
+    for (const user of users) {
+        const { name, id, password } = user;
 
+        // 필수 항목 확인
+        if (!name || !id || !password) {
+            results.push({ id: id || null, status: 'error', message: '필수 항목 누락: name, id, password가 필요합니다.' });
+            continue;
+        }
+
+        try {
             // ID 중복 확인
             const [rows] = await pool.promise().query('SELECT * FROM users WHERE id = ?', [id]);
             if (rows.length > 0) {
-                return res.status(400).send(`이미 존재하는 ID입니다: ${id}`);
+                results.push({ id, status: 'error', message: '이미 존재하는 ID입니다.' });
+                continue;
             }
 
             // 비밀번호 해싱
@@ -33,13 +38,16 @@ router.post('/', async (req, res) => {
                 'INSERT INTO users (name, id, password) VALUES (?, ?, ?)',
                 [name, id, hashed]
             );
-        }
 
-        res.status(201).send('모든 사용자 등록 성공');
-    } catch (err) {
-        console.error(err);
-        res.status(500).send('서버 오류');
+            results.push({ id, status: 'success' });
+        } catch (err) {
+            console.error(`Error for ID ${id}:`, err);
+            results.push({ id, status: 'error', message: '서버 오류' });
+        }
     }
+
+    // 모든 결과 반환
+    res.status(207).json(results); // 207: Multi-Status
 });
 
 module.exports = router;
